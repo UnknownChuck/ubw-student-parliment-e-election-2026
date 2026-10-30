@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>පාසල් ඡන්ද පද්ධතිය - Voter Portal</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS CDN -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- Google Font: Noto Sans Sinhala -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans Sinhala', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white shadow-md py-4 px-6 text-center sticky top-0 z-30">
+        <h1 class="text-xl md:text-2xl font-bold tracking-wide">🎓 ශිෂ්‍ය නායක මැතිවරණය</h1>
+        <p id="voter-banner" class="text-xs md:text-sm text-indigo-200 mt-1">ඔබගේ ඇතුළත්වීමේ අංකය සහ PIN අංකය ඇතුළත් කරන්න</p>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow flex items-center justify-center p-4">
+        
+        <!-- LOGIN SECTION -->
+        <div id="login-section" class="w-full max-w-sm bg-white rounded-2xl shadow-xl p-6 border border-slate-200">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-extrabold text-slate-900">පද්ධතියට පිවිසෙන්න</h2>
+                <p class="text-xs text-slate-500 mt-1">ඡන්දය ප්‍රකාශ කිරීමට පුරනය වන්න</p>
+            </div>
+
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label for="admission_no" class="block text-xs font-semibold text-slate-600 mb-1">ඇතුළත්වීමේ අංකය (Admission No)</label>
+                    <input type="text" id="admission_no" required placeholder="උදා: 1" 
+                        class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-slate-800 font-medium text-sm">
+                </div>
+                <div>
+                    <label for="pin" class="block text-xs font-semibold text-slate-600 mb-1">මුරපදය (PIN)</label>
+                    <input type="password" id="pin" required placeholder="••••" 
+                        class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-slate-800 font-medium text-sm">
+                </div>
+                <div id="login-error" class="hidden text-red-500 text-xs font-medium text-center bg-red-50 p-2.5 rounded-lg border border-red-100"></div>
+                
+                <button type="submit" id="login-btn" 
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-100 transition-all text-sm">
+                    ඇතුළු වන්න
+                </button>
+            </form>
+        </div>
+
+        <!-- BALLOT SECTION -->
+        <div id="ballot-section" class="hidden w-full max-w-4xl space-y-8 py-4">
+            
+            <!-- Status Card -->
+            <div class="bg-white border border-indigo-100 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-2">
+                <div class="flex items-center space-x-3">
+                    <span id="current-voter-badge" class="font-bold bg-indigo-100 text-indigo-800 px-3 py-1 rounded-lg text-sm"></span>
+                    <span class="text-xs text-slate-500">කාණ්ඩ දෙකෙන්ම එක් අයෙකු බැගින් ඡන්ද 2ක් ලබා දිය යුතුය.</span>
+                </div>
+                <div class="flex gap-2">
+                    <span id="badge-6-9" class="text-xs px-3 py-1 rounded-full font-semibold bg-amber-100 text-amber-800">6-9 ශ්‍රේණි: හිඟයි</span>
+                    <span id="badge-10-13" class="text-xs px-3 py-1 rounded-full font-semibold bg-amber-100 text-amber-800">10-13 ශ්‍රේණි: හිඟයි</span>
+                </div>
+            </div>
+
+            <!-- Category 1: Grade 6 - 9 -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+                <div class="flex items-center space-x-2 border-b border-slate-100 pb-3 mb-4">
+                    <span class="text-xl">🏫</span>
+                    <h2 class="text-lg font-bold text-slate-800">Grade 6-9 ශ්‍රේණි සඳහා අපේක්ෂකයින්</h2>
+                    <span class="text-xs text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full font-semibold">1 ඡන්දයක් පමණයි</span>
+                </div>
+                <div id="candidates-6-9" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+
+            <!-- Category 2: Grade 10 - 13 -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+                <div class="flex items-center space-x-2 border-b border-slate-100 pb-3 mb-4">
+                    <span class="text-xl">🎓</span>
+                    <h2 class="text-lg font-bold text-slate-800">Grade 10-13 ශ්‍රේණි සඳහා අපේක්ෂකයින්</h2>
+                    <span class="text-xs text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full font-semibold">1 ඡන්දයක් පමණයි</span>
+                </div>
+                <div id="candidates-10-13" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+        </div>
+
+        <!-- SUCCESS SCREEN -->
+        <div id="success-screen" class="hidden w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center border border-slate-100">
+            <div id="success-icon" class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl font-bold">✓</div>
+            <h2 id="success-title" class="text-2xl font-extrabold text-slate-900 mb-2">ඡන්දය ප්‍රකාශ කිරීම සාර්ථකයි!</h2>
+            <p id="success-msg" class="text-sm text-slate-500 mb-6">ඔබගේ ඡන්ද දෙකම සාර්ථකව පද්ධතියට එක් විය. ස්තූතියි!</p>
+            <button onclick="location.reload()" class="bg-slate-900 text-white px-8 py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all shadow-lg">පිටවීම</button>
+        </div>
+
+    </main>
+
+    <!-- CUSTOM CONFIRMATION MODAL -->
+    <div id="confirm-modal" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center transform transition-all scale-100">
+            <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🗳️</div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1">ඡන්දය තහවුරු කරන්න</h3>
+            <p class="text-xs text-slate-500 mb-4">ඔබ තෝරාගත් අපේක්ෂකයාට ඡන්දය ලබා දීමට අවශ්‍යද?</p>
+            
+            <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 mb-6">
+                <p id="modal-candidate-name" class="font-bold text-slate-800 text-base"></p>
+                <p id="modal-candidate-category" class="text-xs text-indigo-600 font-semibold mt-0.5"></p>
+            </div>
+
+            <div class="flex space-x-3">
+                <button id="modal-cancel-btn" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-3 rounded-xl transition-all">අවලංගු කරන්න</button>
+                <button id="modal-confirm-btn" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-3 rounded-xl shadow-md transition-all">ඔව්, තහවුරු කරන්න</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-xs text-slate-400 border-t border-slate-200 bg-white">
+        විද්‍යාලයීය ඩිජිටල් මැතිවරණ පද්ධතිය &copy; 2026
+    </footer>
+
+    <!-- JS Logic -->
+    <script>
+        const SUPABASE_URL = "https://nmleeunqaulfyrvexxhn.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tbGVldW5xYXVsZnlydmV4eGhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyNjc3NDcsImV4cCI6MjEwODg0Mzc0N30.7NQeU94sTqQOeskwtvwX4_kph_rufxlTi5cuRju24KU";
+
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentVoter = null;
+        let voterData = null;
+        let selectedCandidate = null;
+
+        const loginForm = document.getElementById('login-form');
+        const loginSection = document.getElementById('login-section');
+        const ballotSection = document.getElementById('ballot-section');
+        const successScreen = document.getElementById('success-screen');
+        const loginError = document.getElementById('login-error');
+        const confirmModal = document.getElementById('confirm-modal');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            loginError.classList.add('hidden');
+            const admissionNo = document.getElementById('admission_no').value.trim();
+            const pin = document.getElementById('pin').value.trim();
+
+            const btn = document.getElementById('login-btn');
+            btn.disabled = true;
+            btn.textContent = "පරීක්ෂා කරමින්...";
+
+            try {
+                const { data: voters, error } = await supabaseClient
+                    .from('voters')
+                    .select('*')
+                    .eq('admission_no', admissionNo);
+
+                if (error) throw new Error(error.message);
+                if (!voters || voters.length === 0) throw new Error("ඇතුළත්වීමේ අංකය නිවැරදි නොවේ.");
+
+                const voter = voters.find(v => String(v.pin).trim() === String(pin).trim());
+                if (!voter) throw new Error("මුරපදය (PIN) නිවැරදි නොවේ.");
+
+                voterData = voter;
+                currentVoter = voter.admission_no;
+
+                if (voter.voted_6_9 && voter.voted_10_13) {
+                    showAlreadyVotedScreen();
+                    return;
+                }
+
+                document.getElementById('current-voter-badge').textContent = `ඇතුළත්වීමේ අංකය: ${currentVoter}`;
+                document.getElementById('voter-banner').textContent = `ලොග් වී ඇත: ${currentVoter}`;
+
+                updateBadges();
+
+                loginSection.classList.add('hidden');
+                ballotSection.classList.remove('hidden');
+                loadCandidates();
+
+            } catch (err) {
+                loginError.textContent = err.message;
+                loginError.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = "ඇතුළු වන්න";
+            }
+        });
+
+        function updateBadges() {
+            const b69 = document.getElementById('badge-6-9');
+            const b1013 = document.getElementById('badge-10-13');
+
+            if (voterData.voted_6_9) {
+                b69.className = "text-xs px-3 py-1 rounded-full font-semibold bg-emerald-100 text-emerald-800";
+                b69.textContent = "Grade 6-9: ප්‍රකාශිතයි ✓";
+            } else {
+                b69.className = "text-xs px-3 py-1 rounded-full font-semibold bg-amber-100 text-amber-800";
+                b69.textContent = "Grade 6-9: හිඟයි";
+            }
+
+            if (voterData.voted_10_13) {
+                b1013.className = "text-xs px-3 py-1 rounded-full font-semibold bg-emerald-100 text-emerald-800";
+                b1013.textContent = "Grade 10-13: ප්‍රකාශිතයි ✓";
+            } else {
+                b1013.className = "text-xs px-3 py-1 rounded-full font-semibold bg-amber-100 text-amber-800";
+                b1013.textContent = "Grade 10-13: හිඟයි";
+            }
+        }
+
+        async function loadCandidates() {
+            try {
+                const { data: candidates, error } = await supabaseClient
+                    .from('candidates')
+                    .select('*');
+
+                if (error) throw error;
+
+                const box6_9 = document.getElementById('candidates-6-9');
+                const box10_13 = document.getElementById('candidates-10-13');
+                box6_9.innerHTML = '';
+                box10_13.innerHTML = '';
+
+                candidates.forEach(c => {
+                    const avatarUrl = c.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.name}`;
+                    const category = c.grade_category || 'Grade 6-9';
+                    
+                    // Check voting status based on exact database category string
+                    const isGrade10_13 = category.trim().toLowerCase() === 'grade 10-13';
+                    const isCategoryVoted = isGrade10_13 ? voterData.voted_10_13 : voterData.voted_6_9;
+
+                    const card = document.createElement('div');
+                    card.className = `p-4 rounded-xl border flex items-center justify-between transition-all ${isCategoryVoted ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-md'}`;
+
+                    card.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <img src="${avatarUrl}" class="w-12 h-12 rounded-full object-cover bg-indigo-50 border border-indigo-100">
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-sm">${c.name}</h3>
+                                <p class="text-xs text-indigo-600 font-medium">${c.position || 'අපේක්ෂකයා'}</p>
+                            </div>
+                        </div>
+                        <button onclick='openConfirmModal(${JSON.stringify(c)})' 
+                            ${isCategoryVoted ? 'disabled' : ''}
+                            class="${isCategoryVoted ? 'bg-slate-300 text-slate-600 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white'} text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition-all">
+                            ${isCategoryVoted ? 'අවසන්' : 'ඡන්දය දෙන්න'}
+                        </button>
+                    `;
+
+                    if (isGrade10_13) {
+                        box10_13.appendChild(card);
+                    } else {
+                        box6_9.appendChild(card);
+                    }
+                });
+
+            } catch (err) {
+                alert("අපේක්ෂකයින් පූරණය කිරීමට අපොහොසත් විය: " + err.message);
+            }
+        }
+
+        function openConfirmModal(candidate) {
+            selectedCandidate = candidate;
+            const cat = candidate.grade_category || 'Grade 6-9';
+            document.getElementById('modal-candidate-name').textContent = candidate.name;
+            document.getElementById('modal-candidate-category').textContent = cat.trim().toLowerCase() === 'grade 10-13' ? 'Grade 10-13 කාණ්ඩය' : 'Grade 6-9 කාණ්ඩය';
+            confirmModal.classList.remove('hidden');
+        }
+
+        document.getElementById('modal-cancel-btn').addEventListener('click', () => {
+            confirmModal.classList.add('hidden');
+            selectedCandidate = null;
+        });
+
+        document.getElementById('modal-confirm-btn').addEventListener('click', async () => {
+            if (!selectedCandidate) return;
+            confirmModal.classList.add('hidden');
+
+            try {
+                const rawCat = selectedCandidate.grade_category || 'Grade 6-9';
+                // Map database category string to function parameter format ('grade_6_9' or 'grade_10_13')
+                const dbCategory = rawCat.trim().toLowerCase() === 'grade 10-13' ? 'grade_10_13' : 'grade_6_9';
+
+                const { error } = await supabaseClient.rpc('cast_vote', {
+                    candidate_id_param: selectedCandidate.id,
+                    voter_admission_param: currentVoter,
+                    category_param: dbCategory
+                });
+
+                if (error) throw error;
+
+                if (dbCategory === 'grade_6_9') voterData.voted_6_9 = true;
+                if (dbCategory === 'grade_10_13') voterData.voted_10_13 = true;
+
+                updateBadges();
+                loadCandidates();
+
+                if (voterData.voted_6_9 && voterData.voted_10_13) {
+                    ballotSection.classList.add('hidden');
+                    successScreen.classList.remove('hidden');
+                }
+
+            } catch (err) {
+                alert("දෝෂයකි: " + err.message);
+            }
+        });
+
+        function showAlreadyVotedScreen() {
+            loginSection.classList.add('hidden');
+            successScreen.classList.remove('hidden');
+            document.getElementById('success-title').textContent = "ඡන්දය ලබා දී අවසන්";
+            document.getElementById('success-msg').textContent = "ඔබ දැනටමත් කාණ්ඩ දෙකටම ඡන්දය ප්‍රකාශ කර ඇත.";
+        }
+    </script>
+</body>
+</html>
